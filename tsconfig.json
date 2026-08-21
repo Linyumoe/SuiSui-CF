@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ESNext", "module": "ESNext", "moduleResolution": "bundler",
+    "strict": true, "jsx": "preserve", "resolveJsonModule": true,
+    "isolatedModules": true, "esModuleInterop": true, "lib": ["ESNext", "DOM"],
+    "skipLibCheck": true, "noEmit": true,
+    "forceConsistentCasingInFileNames": true, "paths": { "@/*": ["./src/*"] },
+    "baseUrl": "."
+  },
+  "vueCompilerOptions": {
+    "customElements": ["live-video-player", "live-video-skin", "hls-video"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue"]
+}
