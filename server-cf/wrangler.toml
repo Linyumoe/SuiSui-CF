@@ -14,7 +14,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "suisui-cf"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "a7e2e105-0e1f-4762-b0fb-356f1e91d0d6"
 
 [[r2_buckets]]
 binding = "UPLOADS"
