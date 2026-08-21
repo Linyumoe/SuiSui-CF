@@ -66,7 +66,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ vars.CF_PAGES_PROJECT || 'suisui' }}
+          command: pages deploy dist --project-name=${{ vars.CF_PAGES_PROJECT || 'suisui-cf' }}
 
       - name: Deploy Worker to Cloudflare
         working-directory: server-cf
