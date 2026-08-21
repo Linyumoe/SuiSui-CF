@@ -160,7 +160,9 @@ notesApp.post("/upload", async c => {
   const ext = dot >= 0 ? name.slice(dot) : ""
   if (!allowedUploadExts.has(ext)) return err("不支持的文件格式", 400)
   const key = `${Date.now()}${ext}`
-  await env.UPLOADS.put(key, file.stream(), { httpMetadata: { contentType: file.type } })
+  await env.UPLOADS.put(key, await file.arrayBuffer(), {
+    metadata: { contentType: file.type || "application/octet-stream" },
+  })
   return json({ success: true, url: "/uploads/" + key })
 })
 

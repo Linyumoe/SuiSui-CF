@@ -41,7 +41,7 @@ app.get("/health", c => {
   return json({ status: "ok", dbSchemaVersion: 1, version: c.env.VERSION ?? "cf" })
 })
 
-// 图片读取（R2）
+// 图片读取（Workers KV）
 app.get("/uploads/:key", async c => {
   const key = c.req.param("key")
   if (!key || key.includes("..") || key.includes("/") || key.includes("\\")) {
@@ -50,14 +50,14 @@ app.get("/uploads/:key", async c => {
   const dot = key.lastIndexOf(".")
   const ext = dot >= 0 ? key.slice(dot).toLowerCase() : ""
   if (!allowedUploadExts.has(ext)) return c.notFound()
-  const obj = await c.env.UPLOADS.get(key)
-  if (!obj) return c.notFound()
+  const { value, metadata } = await c.env.UPLOADS.getWithMetadata<{ contentType?: string }>(key, "arrayBuffer")
+  if (value === null) return c.notFound()
   const headers = new Headers()
-  obj.writeHttpMetadata(headers)
+  headers.set("Content-Type", metadata?.contentType || "application/octet-stream")
   headers.set("Cache-Control", "public, max-age=604800")
   headers.set("X-Content-Type-Options", "nosniff")
   headers.set("Access-Control-Allow-Origin", "*")
-  return new Response(obj.body, { headers })
+  return new Response(value, { headers })
 })
 
 // 404 / 错误处理

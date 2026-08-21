@@ -1,7 +1,8 @@
 /** Cloudflare Worker 环境绑定 */
 export interface Env {
   DB: D1Database
-  UPLOADS: R2Bucket
+  /** 图片存储：Workers KV（免费，无需绑卡） */
+  UPLOADS: KVNamespace
   /** 可选：GitHub API 代理 token（wrangler secret put GITHUB_TOKEN） */
   GITHUB_TOKEN?: string
   /** 构建时注入的版本号 */
