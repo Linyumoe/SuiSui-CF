@@ -5,15 +5,9 @@ dist/
 *.db-wal
 *.db-shm
 uploads/
-server-go/server.exe
-server-go/meng.exe
-server-go/meng.exe~
-server-go/meng-linux
-server-go/uploads/
 fix_chinese.py
 mobile-toolbar.png
 
-server-go/*.exe
 .codegraph/
 .reasonix/
 codewhale-tui-*.exe
@@ -25,3 +19,7 @@ suisui-root.pem
 .playwright-mcp/
 
 .deepseek/
+
+# ── Cloudflare Worker server ──
+server-cf/node_modules/
+server-cf/.wrangler/

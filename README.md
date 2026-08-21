@@ -22,16 +22,16 @@
 </picture>
 <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
 <img src="https://img.shields.io/badge/Vuetify_4-1867C0?style=for-the-badge&logo=vuetify&logoColor=white" alt="Vuetify 4"/>
-<img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go"/>
-<img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite"/>
+<img src="https://img.shields.io/badge/Cloudflare_Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare Workers"/>
+<img src="https://img.shields.io/badge/D1_%26_R2-F6821F?style=for-the-badge&logo=cloudflare&logoColor=white" alt="D1 & R2"/>
 
 <br/>
 
 <pre style="background: transparent; border: none; color: #666; font-size: 0.9em;">
 ╔══════════════════════════════════════════════════╗
-║  前端 Vue 3 + Vuetify 4  ·  后端 Go 单二进制     ║
+║  前端 Vue 3 + Vuetify 4  ·  后端 Cloudflare      ║
 ║  TypeScript 严格模式  ·  零外部 CDN 依赖        ║
-║  HMAC-SHA256 密码哈希  ·  Content-Security-Policy ║
+║  PBKDF2 密码哈希  ·  Content-Security-Policy      ║
 ╚══════════════════════════════════════════════════╝
 </pre>
 
@@ -84,12 +84,12 @@
 ### 🚀 部署特色
 | 特性 | 说明 |
 |------|------|
-| **单二进制部署** | Go 编译为**一个可执行文件**，内嵌前端全部静态资源 |
-| **SQLite 存储** | 无需数据库服务器，文件即数据库 |
+| **Cloudflare 免费部署** | 前端 **Pages** + 后端 **Worker** + **D1** 数据库 + **R2** 图片存储 |
+| **零服务器成本** | 全部运行在 Cloudflare 边缘网络，个人用量完全免费 |
 | **前端编译压缩** | Vite 构建时自动压缩静态资源（Brotli + Gzip）|
 | **零外部依赖** | 除浏览器外无需安装任何运行时 |
 | **安全响应头** | Content-Security-Policy · X-Frame-Options · HSTS |
-| **一键安装** | `curl -sSL .../install.sh \| bash` |
+| **自动部署** | GitHub Actions push 即自动部署到 Cloudflare |
 
 ---
 
@@ -97,42 +97,53 @@
 
 ### 💻 开发模式
 ```bash
-# 终端 1：启动后端
-cd server-go && go run .
+# 终端 1：启动 Cloudflare Worker 后端（本地模拟）
+cd server-cf && npm install && npm run dev
+# → 默认 http://localhost:8787
 
-# 终端 2：启动前端开发服务器
+# 终端 2：启动前端开发服务器（已代理 /api 与 /uploads 到 8787）
+npm install
 npx vite --port 5173 --host
 ```
-打开 **http://localhost:5173**
+打开 **http://localhost:5173**。先访问任意接口触发默认管理员创建，或手动注册新用户。
 
-### 📦 生产构建
+首次使用前端需指定 Worker 地址，在项目根 `.env.local` 写入：
 ```bash
-# 构建前端
-npm run build
-
-# 编译为单二进制
-cd server-go && go build -o suisui .
-
-# 运行
-./suisui                    # 默认端口 3742
-./suisui -port 8080         # 自定义端口
-PORT=8080 ./suisui          # 环境变量
+VITE_API_BASE=http://localhost:8787
 ```
 
-### 🐳 Docker
-```bash
-# 一键安装
-curl -sSL https://raw.githubusercontent.com/Linraintong/SuiSui/main/install.sh | bash
+### ☁️ 部署到 Cloudflare（免费）
+前置：注册 Cloudflare 账号，安装 Node 18+，并在 `server-cf` 目录执行 `npm install`。
 
-# 或手动运行
-docker run -d --name suisui \
-  --cpus="0.5" --memory="256m" \
-  -p 3742:3742 \
-  -v /opt/suisui:/data \
-  linyumeng/suisui:latest
+**1. 创建数据库与存储桶**（仅在 `server-cf/wrangler.toml` 中 database_id 仍为占位符时执行一次）：
+```bash
+cd server-cf
+npx wrangler d1 create suisui          # 创建 D1 数据库，把输出的 database_id 填到 wrangler.toml
+npx wrangler r2 bucket create suisui-uploads
+npm run db:migrate:remote              # 应用表结构迁移
+npx wrangler secret put GITHUB_TOKEN   # 可选：GitHub API 代理 token
 ```
 
-> HTTPS 可通过后台「系统设置 → 服务器配置」上传证书并启用，无需额外配置。
+**2. 部署后端 Worker**：
+```bash
+cd server-cf && npm run deploy
+```
+
+**3. 部署前端到 Pages**：
+```bash
+cd .. && npm run build
+npx wrangler pages deploy dist --project-name=suisui
+```
+> 前端通过 `VITE_API_BASE` 指向 Worker 域名。若前后端同源部署（`workerd` 统一入口），可省略该变量。
+
+**4. GitHub Actions 自动部署**（推荐）：推送 `main` 分支即自动部署前后端。在仓库 Settings → Secrets 配置：
+| Secret | 说明 |
+|--------|------|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token（Workers Scripts + Pages 编辑权限）|
+| `CLOUDFLARE_ACCOUNT_ID` | 你的 Cloudflare Account ID |
+| `CF_PAGES_PROJECT` | （可选 Pages 项目名，默认 `suisui`）|
+
+默认管理员 **admin / admin**，首次登录后请在「设置」中立即修改密码。
 
 ---
 
@@ -157,15 +168,15 @@ docker run -d --name suisui \
 │   └── 📁 utils/
 │       └── 📄 api.ts                 #   authFetch 工具
 │
-├── 📁 server-go/                     # 🖥️ 后端 (Go)
-│   ├── 📄 main.go                    #   入口 + 路由 + 静态文件服务
-│   ├── 📄 db.go                      #   数据库初始化 + 工具函数
-│   ├── 📄 auth.go                    #   认证 handler
-│   ├── 📄 notes.go                   #   笔记 + 回收站 handler
-│   ├── 📄 admin.go                   #   设置 + 管理 handler
-│   ├── 📄 responses.go               #   类型化响应结构体
-│   ├── 📄 main_test.go               #   6 个测试用例
-│   └── 📁 uploads/                   #   用户上传文件
+├── 📁 server-cf/                     # ☁️ 后端 (Cloudflare Worker)
+│   ├── 📄 src/index.ts               #   入口 + 路由 + 中间件
+│   ├── 📄 src/auth.ts                #   认证（PBKDF2-SHA256 哈希 + 限流）
+│   ├── 📄 src/notes.ts               #   笔记 + 回收站 + reactions
+│   ├── 📄 src/admin.ts               #   设置 + 管理
+│   ├── 📄 src/gh.ts                  #   GitHub API 代理
+│   ├── 📁 migrations/                #   D1 数据库迁移
+│   ├── 📄 wrangler.toml              #   Worker / D1 / R2 配置
+│   └── 📄 package.json               #   server 依赖
 │
 ├── 📄 vite.config.ts                 # Vite 配置
 ├── 📄 tsconfig.json                  # TypeScript 配置
@@ -175,12 +186,17 @@ docker run -d --name suisui \
 
 ### 🔄 数据流
 ```
-用户操作 → Vue 组件 → Pinia Store → authFetch(Bearer) → Go handler → SQLite
+用户操作 → Vue 组件 → Pinia Store → authFetch(Bearer) → Cloudflare Worker (Hono)
+                                                                    ↓
+                                                     D1 (SQLite) / R2 (图片)
                                                                     ↓
                                               JSON Response ← 查询 / 写入
                                                                     ↓
                                               Pinia Store 更新 → Vue 响应式渲染
 ```
+
+### 🔄 实时同步
+Worker 后端不提供 SSE，前端使用 **15 秒定时轮询**检测新笔记数量（`useNotePolling`）。
 
 ---
 
@@ -190,13 +206,13 @@ docker run -d --name suisui \
 
 | 前端 | 后端 |
 |:------|:------|
-| **Vue 3** + **TypeScript** (strict 模式) | **Go** (net/http) |
-| **Vuetify 4** (Material Design 3) | **SQLite** (modernc.org/sqlite) |
-| **Pinia** 状态管理 | RESTful API |
-| **Marked** + **Highlight.js** (代码高亮) | **HMAC-SHA256** × 10000 迭代密码哈希 |
+| **Vue 3** + **TypeScript** (strict 模式) | **Cloudflare Workers** (Hono) |
+| **Vuetify 4** (Material Design 3) | **D1** (SQLite) |
+| **Pinia** 状态管理 | **R2** (对象存储，图片) |
+| **Marked** + **Highlight.js** (代码高亮) | **PBKDF2-SHA256** 密码哈希 |
 | **Vite 6** (极速构建) | **Token 鉴权** + IP 限流 |
 | **emojibase-data** (中文 emoji) | 版本化 DB 迁移 · GitHub API 反代 |
-| 零 CDN · 全部本地打包 | 单二进制嵌入前端 + 字体 |
+| 零 CDN · 全部本地打包 | Workers 边缘部署 · Pages 托管前端 |
 
 </div>
 
@@ -297,11 +313,12 @@ docker run -d --name suisui \
 ## 🧪 本地验证
 
 ```bash
-# Go 后端
-cd server-go && go vet ./... && go test ./...
+# server-cf 后端（类型检查 + 单元测试）
+cd server-cf && npm run typecheck && npm run test
 
-# 前端
-npx vue-tsc --noEmit && npm run build
+# 前端（Lint + 类型检查 + 测试 + 构建）
+cd ..
+npm run lint && npm run typecheck && npm run test:run && npm run build
 ```
 
 ---
